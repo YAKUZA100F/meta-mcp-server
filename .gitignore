@@ -1,0 +1,25 @@
+# Dependencies & Build
+node_modules/
+dist/
+.claude/
+*.tgz
+.DS_Store
+
+# Secrets & Environment
+.env
+.env.*
+!.env.example
+.env.local
+credentials.json
+secrets.json
+*.pem
+*.p12
+*.key
+
+# Persistent client data & licenses (NEVER COMMIT)
+data/
+CLIENT_PACKAGE_TEMPLATE/mcp_config.json
+
+# Local test & debug scripts containing credentials
+*.mjs
+*.log

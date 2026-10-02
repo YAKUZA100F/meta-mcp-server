@@ -1,0 +1,62 @@
+{
+  "name": "@oliverames/meta-mcp-server",
+  "version": "2.0.2",
+  "description": "The most comprehensive MCP server for Meta Business Suite — 200 tools across Facebook Pages, Instagram, Threads, Ads Manager, Commerce, Conversions API, and more",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "meta-mcp-server": "dist/index.js"
+  },
+  "files": [
+    "dist/"
+  ],
+  "scripts": {
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist",
+    "client:add": "tsx scripts/manage-clients.ts add",
+    "client:renew": "tsx scripts/manage-clients.ts renew",
+    "client:revoke": "tsx scripts/manage-clients.ts revoke",
+    "client:list": "tsx scripts/manage-clients.ts list"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/oliverames/meta-mcp-server.git"
+  },
+  "license": "MIT",
+  "author": "Oliver Ames",
+  "keywords": [
+    "mcp",
+    "meta",
+    "facebook",
+    "instagram",
+    "threads",
+    "ads-manager",
+    "graph-api",
+    "model-context-protocol",
+    "claude",
+    "ai-tools"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.6.1",
+    "@types/express": "^5.0.6",
+    "axios": "^1.7.9",
+    "express": "^5.2.1",
+    "pg": "^8.23.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/pg": "^8.23.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.0"
+  }
+}

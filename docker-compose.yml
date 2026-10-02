@@ -1,0 +1,39 @@
+services:
+  meta-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: meta-mcp-server
+    restart: unless-stopped
+    ports:
+      - "2222:2222"
+    environment:
+      - PORT=2222
+      - NODE_ENV=production
+      - DATA_DIR=/app/data
+      - META_ACCESS_TOKEN=${META_ACCESS_TOKEN:-}
+      - THREADS_ACCESS_TOKEN=${THREADS_ACCESS_TOKEN:-}
+      - DATABASE_URL=${DATABASE_URL:-}
+    volumes:
+      - ./data:/app/data
+
+  # Production Reverse Proxy with Automatic SSL (for VPS deployment)
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy-ssl
+    restart: unless-stopped
+    profiles:
+      - prod
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - meta-mcp
+
+volumes:
+  caddy_data:
+  caddy_config:

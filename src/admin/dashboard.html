@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة تحكم المشتركين | Meta Ads AI Manager</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+    [dir="rtl"] .ltr { direction: ltr; text-align: left; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+
+  <!-- Top Navbar -->
+  <header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg leading-tight bg-gradient-to-r from-blue-400 to-indigo-300 bg-clip-text text-transparent">Meta AI Cloud Admin</h1>
+          <p class="text-xs text-slate-400">إدارة اشتراكات وحسابات Antigravity</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button onclick="openNewClientModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold text-sm flex items-center gap-2 transition shadow-lg shadow-blue-600/30">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          إضافة مشترك جديد
+        </button>
+        <button onclick="changeAdminKey()" class="p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg text-xs border border-slate-800" title="تغيير مفتاح الأدمن">
+          🔑 الساروت
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+    <!-- Stats Overview -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase text-slate-400">إجمالي المشتركين</span>
+          <span class="p-2 rounded-xl bg-blue-500/10 text-blue-400">👥</span>
+        </div>
+        <div id="statTotal" class="text-3xl font-extrabold text-white mt-3">0</div>
+        <p class="text-xs text-slate-500 mt-1">جميع الحسابات المسجلة</p>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase text-slate-400">الاشتراكات النشطة</span>
+          <span class="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">⚡</span>
+        </div>
+        <div id="statActive" class="text-3xl font-extrabold text-emerald-400 mt-3">0</div>
+        <p class="text-xs text-slate-500 mt-1">لهم صلاحية استخدام AI حالياً</p>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase text-slate-400">تنتهي قريباً (أقل من 7 أيام)</span>
+          <span class="p-2 rounded-xl bg-amber-500/10 text-amber-400">⏳</span>
+        </div>
+        <div id="statExpiring" class="text-3xl font-extrabold text-amber-400 mt-3">0</div>
+        <p class="text-xs text-slate-500 mt-1">تحتاج متابعة للتجديد</p>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase text-slate-400">الجلسات المفتوحة دابا</span>
+          <span class="p-2 rounded-xl bg-purple-500/10 text-purple-400">🟢</span>
+        </div>
+        <div id="statLive" class="text-3xl font-extrabold text-purple-400 mt-3">0</div>
+        <p class="text-xs text-slate-500 mt-1">عملاء متصلون بـ Antigravity الآن</p>
+      </div>
+    </div>
+
+    <!-- Clients Table Section -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+      <div class="p-5 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-bold text-white">قائمة العملاء والتراخيص</h2>
+          <p class="text-xs text-slate-400">تحكم كامل في تجديد، إيقاف، وتهيئة حسابات العملاء</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <input type="text" id="searchInput" oninput="filterClients()" placeholder="بحث بالاسم أو ID..." class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 w-64">
+          <button onclick="loadClients()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs" title="تحديث البيانات">🔄</button>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-right text-sm">
+          <thead class="bg-slate-950/60 text-slate-400 text-xs font-semibold uppercase border-b border-slate-800">
+            <tr>
+              <th class="px-5 py-3.5">العميل / ID</th>
+              <th class="px-5 py-3.5">حالة الاشتراك</th>
+              <th class="px-5 py-3.5">الأيام المتبقية</th>
+              <th class="px-5 py-3.5">تاريخ الانتهاء</th>
+              <th class="px-5 py-3.5">بيانات فيسبوك المستقلة</th>
+              <th class="px-5 py-3.5 text-center">إجراءات سريعة</th>
+            </tr>
+          </thead>
+          <tbody id="clientsTableBody" class="divide-y divide-slate-800/60 text-slate-300">
+            <tr>
+              <td colspan="6" class="text-center py-10 text-slate-500">جاري تحميل البيانات...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal: Add New Client -->
+  <div id="newClientModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+      <div class="p-5 border-b border-slate-800 flex justify-between items-center">
+        <h3 class="font-bold text-lg text-white">إضافة عميل واشتراك جديد</h3>
+        <button onclick="closeModal('newClientModal')" class="text-slate-400 hover:text-white">&times;</button>
+      </div>
+      <form id="addClientForm" onsubmit="submitAddClient(event)" class="p-5 space-y-4 text-sm">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">اسم العميل *</label>
+          <input type="text" id="clientName" required placeholder="مثال: متجر الأناقة (سعيد)" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">مدة الاشتراك بالأيام *</label>
+            <input type="number" id="clientDays" required value="30" min="1" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">رقم الحساب الإعلاني (اختياري)</label>
+            <input type="text" id="clientAdAccount" placeholder="act_123456789" class="ltr w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Facebook Access Token الخاص به (اختياري)</label>
+          <input type="password" id="clientMetaToken" placeholder="EAA..." class="ltr w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 text-xs">
+          <p class="text-[11px] text-slate-500 mt-1">إذا تركتها فارغة، سيستخدم توكن الوكالة الافتراضي.</p>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">ملاحظات داخلية</label>
+          <input type="text" id="clientNotes" placeholder="مثال: تم الدفع عبر بنك CIH، باقة ممتازة" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500">
+        </div>
+        <div class="pt-2 flex justify-end gap-2">
+          <button type="button" onclick="closeModal('newClientModal')" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs">إلغاء</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs">إنشاء الاشتراك وحفظ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Antigravity Config Snippet -->
+  <div id="configModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+      <div class="p-5 border-b border-slate-800 flex justify-between items-center">
+        <div>
+          <h3 class="font-bold text-lg text-white">إعدادات Antigravity للعميل</h3>
+          <p id="configClientTitle" class="text-xs text-blue-400 mt-0.5"></p>
+        </div>
+        <button onclick="closeModal('configModal')" class="text-slate-400 hover:text-white">&times;</button>
+      </div>
+      <div class="p-5 space-y-4">
+        <p class="text-xs text-slate-300 leading-relaxed">
+          انسخ هذا الإعداد بالكامل وأرسله للعميل ليضعه في ملف <code class="bg-slate-950 px-1 py-0.5 rounded text-amber-400">mcp_config.json</code> أو في إعدادات MCP في تطبيق Antigravity عنده:
+        </p>
+        <div class="relative">
+          <pre id="configJson" class="ltr bg-slate-950 p-4 rounded-xl text-xs text-emerald-400 font-mono overflow-x-auto border border-slate-800 max-h-60 select-all"></pre>
+          <button onclick="copyConfigToClipboard()" class="absolute top-2 right-2 bg-slate-800 hover:bg-slate-700 text-white text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 flex items-center gap-1.5 shadow">
+            📋 نسخ الإعداد
+          </button>
+        </div>
+        <p class="text-[11px] text-slate-500">
+          🔒 هذا الكود محمي برقم سري للعميل ولا يحتوي على أي كود برمجي، يتيح له استخدام الذكاء الاصطناعي فقط طالما اشتراكه ساري.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Edit Client -->
+  <div id="editClientModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+      <div class="p-5 border-b border-slate-800 flex justify-between items-center">
+        <h3 class="font-bold text-lg text-white">تعديل بيانات العميل</h3>
+        <button onclick="closeModal('editClientModal')" class="text-slate-400 hover:text-white">&times;</button>
+      </div>
+      <form id="editClientForm" onsubmit="submitEditClient(event)" class="p-5 space-y-4 text-sm">
+        <input type="hidden" id="editClientId">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">اسم العميل</label>
+          <input type="text" id="editClientName" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Ad Account ID</label>
+            <input type="text" id="editAdAccount" placeholder="act_..." class="ltr w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Business ID (اختياري)</label>
+            <input type="text" id="editBusinessId" class="ltr w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Facebook Access Token</label>
+          <input type="password" id="editMetaToken" placeholder="اتركه فارغاً لعدم التغيير" class="ltr w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 text-xs">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">ملاحظات</label>
+          <input type="text" id="editNotes" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500">
+        </div>
+        <div class="pt-2 flex justify-end gap-2">
+          <button type="button" onclick="closeModal('editClientModal')" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs">إلغاء</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs">حفظ التعديلات</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let allClients = [];
+    let currentAdminKey = localStorage.getItem("meta_admin_key") || "";
+
+    function getAuthHeaders() {
+      return {
+        "Content-Type": "application/json",
+        "X-Admin-Key": currentAdminKey
+      };
+    }
+
+    function checkAdminKey() {
+      if (!currentAdminKey) {
+        const key = prompt("المرجو إدخال مفتاح الأدمن (ADMIN_SECRET):", "admin123");
+        if (key) {
+          currentAdminKey = key.trim();
+          localStorage.setItem("meta_admin_key", currentAdminKey);
+        }
+      }
+    }
+
+    function changeAdminKey() {
+      const key = prompt("أدخل مفتاح الأدمن الجديد:", currentAdminKey);
+      if (key !== null) {
+        currentAdminKey = key.trim();
+        localStorage.setItem("meta_admin_key", currentAdminKey);
+        loadClients();
+      }
+    }
+
+    async function loadClients() {
+      checkAdminKey();
+      try {
+        const res = await fetch("/api/admin/clients", { headers: getAuthHeaders() });
+        if (res.status === 401 || res.status === 403) {
+          localStorage.removeItem("meta_admin_key");
+          currentAdminKey = "";
+          alert("مفتاح الأدمن غير صحيح!");
+          checkAdminKey();
+          return;
+        }
+        const data = await res.json();
+        allClients = data.clients || [];
+        updateStats(data.stats);
+        renderTable(allClients);
+      } catch (err) {
+        console.error("Error loading clients:", err);
+      }
+    }
+
+    function updateStats(stats) {
+      if (!stats) return;
+      document.getElementById("statTotal").textContent = stats.total || 0;
+      document.getElementById("statActive").textContent = stats.active || 0;
+      document.getElementById("statExpiring").textContent = stats.expiringSoon || 0;
+      document.getElementById("statLive").textContent = stats.liveSessions || 0;
+    }
+
+    function calculateDaysLeft(expiresAt) {
+      const diff = new Date(expiresAt).getTime() - new Date().getTime();
+      return Math.ceil(diff / (1000 * 60 * 60 * 24));
+    }
+
+    function renderTable(clients) {
+      const tbody = document.getElementById("clientsTableBody");
+      if (!clients.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-10 text-slate-500">لا يوجد أي عميل مسجل حالياً. اضغط على "إضافة مشترك جديد" لتبدأ.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = clients.map(client => {
+        const daysLeft = calculateDaysLeft(client.expiresAt);
+        const isExpired = daysLeft <= 0;
+        
+        let statusBadge = '';
+        if (client.status === 'revoked') {
+          statusBadge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">ملغي (Revoked)</span>';
+        } else if (client.status === 'suspended') {
+          statusBadge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">موقوف مؤقتاً</span>';
+        } else if (isExpired) {
+          statusBadge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">منتهي الصلاحية</span>';
+        } else {
+          statusBadge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">نشط (Active)</span>';
+        }
+
+        let daysBadge = '';
+        if (isExpired) {
+          daysBadge = `<span class="font-bold text-rose-400">0 يوم</span>`;
+        } else if (daysLeft <= 7) {
+          daysBadge = `<span class="font-bold text-amber-400">${daysLeft} أيام ⚠️</span>`;
+        } else {
+          daysBadge = `<span class="font-bold text-emerald-400">${daysLeft} يوم</span>`;
+        }
+
+        const dateStr = client.expiresAt.split("T")[0];
+
+        return `
+          <tr class="hover:bg-slate-800/30 transition">
+            <td class="px-5 py-4">
+              <div class="font-bold text-white">${client.clientName}</div>
+              <div class="text-[11px] text-slate-500 font-mono mt-0.5">${client.id}</div>
+              ${client.notes ? `<div class="text-xs text-slate-400 mt-1 italic">📝 ${client.notes}</div>` : ''}
+            </td>
+            <td class="px-5 py-4">${statusBadge}</td>
+            <td class="px-5 py-4">${daysBadge}</td>
+            <td class="px-5 py-4 text-xs font-mono text-slate-400">${dateStr}</td>
+            <td class="px-5 py-4 text-xs">
+              <div class="space-y-0.5 font-mono">
+                <div><span class="text-slate-500">Ad Account:</span> <span class="text-slate-300 font-semibold">${client.adAccountId || 'غير محدد'}</span></div>
+                <div><span class="text-slate-500">Token:</span> <span class="text-slate-400">${client.metaToken ? '✅ مخصص للعميل' : '🌐 توكن الوكالة'}</span></div>
+              </div>
+            </td>
+            <td class="px-5 py-4 text-center">
+              <div class="flex items-center justify-center gap-1.5">
+                <button onclick="quickRenew('${client.id}', 30)" class="bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 px-2 py-1 rounded text-xs font-semibold" title="تمديد 30 يوماً">
+                  +30 يوم
+                </button>
+                <button onclick="showConfig('${client.id}')" class="bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 border border-purple-500/30 px-2 py-1 rounded text-xs font-semibold" title="كود Antigravity">
+                  📋 كود AI
+                </button>
+                <button onclick="openEditModal('${client.id}')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1 rounded text-xs" title="تعديل">
+                  ✏️
+                </button>
+                ${client.status === 'active' ? `
+                  <button onclick="toggleStatus('${client.id}', 'suspended')" class="bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 px-2 py-1 rounded text-xs" title="توقيف مؤقت">
+                    ⏸️
+                  </button>
+                ` : `
+                  <button onclick="toggleStatus('${client.id}', 'active')" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 px-2 py-1 rounded text-xs" title="تفعيل">
+                    ▶️
+                  </button>
+                `}
+                <button onclick="deleteClient('${client.id}', '${client.clientName}')" class="bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 px-2 py-1 rounded text-xs" title="حذف نهائي">
+                  🗑️
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterClients() {
+      const q = document.getElementById("searchInput").value.toLowerCase();
+      const filtered = allClients.filter(c => 
+        c.clientName.toLowerCase().includes(q) || 
+        c.id.toLowerCase().includes(q) ||
+        (c.adAccountId && c.adAccountId.toLowerCase().includes(q))
+      );
+      renderTable(filtered);
+    }
+
+    async function quickRenew(id, days) {
+      if (!confirm(`هل تريد تمديد اشتراك العميل بمقدار ${days} يوماً إضافياً؟`)) return;
+      try {
+        const res = await fetch(`/api/admin/clients/${id}/renew`, {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ days })
+        });
+        const data = await res.json();
+        if (data.success) {
+          loadClients();
+        } else {
+          alert(data.error || "فشل التجديد");
+        }
+      } catch (err) {
+        alert("خطأ في الاتصال");
+      }
+    }
+
+    async function toggleStatus(id, newStatus) {
+      try {
+        const res = await fetch(`/api/admin/clients/${id}/status`, {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ status: newStatus })
+        });
+        const data = await res.json();
+        if (data.success) {
+          loadClients();
+        }
+      } catch (err) {
+        alert("خطأ في تغيير الحالة");
+      }
+    }
+
+    async function deleteClient(id, name) {
+      if (!confirm(`تحذير: هل أنت متأكد من حذف العميل '${name}' نهائياً؟`)) return;
+      try {
+        const res = await fetch(`/api/admin/clients/${id}`, {
+          method: "DELETE",
+          headers: getAuthHeaders()
+        });
+        const data = await res.json();
+        if (data.success) {
+          loadClients();
+        }
+      } catch (err) {
+        alert("خطأ في الحذف");
+      }
+    }
+
+    function showConfig(id) {
+      const client = allClients.find(c => c.id === id);
+      if (!client) return;
+
+      const serverUrl = window.location.origin;
+      const configObj = {
+        mcpServers: {
+          "meta-ads-ai": {
+            url: `${serverUrl}/sse`,
+            headers: {
+              Authorization: `Bearer ${client.token}`
+            }
+          }
+        }
+      };
+
+      document.getElementById("configClientTitle").textContent = `${client.clientName} (${client.id})`;
+      document.getElementById("configJson").textContent = JSON.stringify(configObj, null, 2);
+      document.getElementById("configModal").classList.remove("hidden");
+    }
+
+    function copyConfigToClipboard() {
+      const code = document.getElementById("configJson").textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        alert("تم نسخ كود إعداد Antigravity بنجاح!");
+      });
+    }
+
+    function openNewClientModal() {
+      document.getElementById("addClientForm").reset();
+      document.getElementById("newClientModal").classList.remove("hidden");
+    }
+
+    async function submitAddClient(e) {
+      e.preventDefault();
+      const payload = {
+        clientName: document.getElementById("clientName").value,
+        daysValid: parseInt(document.getElementById("clientDays").value, 10),
+        adAccountId: document.getElementById("clientAdAccount").value.trim() || undefined,
+        metaToken: document.getElementById("clientMetaToken").value.trim() || undefined,
+        notes: document.getElementById("clientNotes").value.trim() || undefined
+      };
+
+      try {
+        const res = await fetch("/api/admin/clients", {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          closeModal("newClientModal");
+          loadClients();
+          showConfig(data.client.id);
+        } else {
+          alert(data.error || "فشل إنشاء العميل");
+        }
+      } catch (err) {
+        alert("خطأ في الإرسال");
+      }
+    }
+
+    function openEditModal(id) {
+      const client = allClients.find(c => c.id === id);
+      if (!client) return;
+
+      document.getElementById("editClientId").value = client.id;
+      document.getElementById("editClientName").value = client.clientName;
+      document.getElementById("editAdAccount").value = client.adAccountId || "";
+      document.getElementById("editBusinessId").value = client.businessId || "";
+      document.getElementById("editMetaToken").value = "";
+      document.getElementById("editNotes").value = client.notes || "";
+
+      document.getElementById("editClientModal").classList.remove("hidden");
+    }
+
+    async function submitEditClient(e) {
+      e.preventDefault();
+      const id = document.getElementById("editClientId").value;
+      const payload = {
+        clientName: document.getElementById("editClientName").value,
+        adAccountId: document.getElementById("editAdAccount").value.trim() || undefined,
+        businessId: document.getElementById("editBusinessId").value.trim() || undefined,
+        notes: document.getElementById("editNotes").value.trim() || undefined
+      };
+      const token = document.getElementById("editMetaToken").value.trim();
+      if (token) {
+        payload.metaToken = token;
+      }
+
+      try {
+        const res = await fetch(`/api/admin/clients/${id}/update`, {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          closeModal("editClientModal");
+          loadClients();
+        } else {
+          alert(data.error || "فشل التعديل");
+        }
+      } catch (err) {
+        alert("خطأ في التعديل");
+      }
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.add("hidden");
+    }
+
+    // Initialize
+    loadClients();
+  </script>
+</body>
+</html>

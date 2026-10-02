@@ -1,0 +1,8 @@
+# ضع هنا النطاق الخاص بك عند النشر على VPS (مثال: mcp.yourdomain.com)
+{$DOMAIN:localhost} {
+    # توجيه الطلبات إلى حاوية meta-mcp
+    reverse_proxy meta-mcp:2222 {
+        # تعطيل الـ Buffering لضمان تدفق رسائل SSE بسلاسة
+        flush_interval -1
+    }
+}
