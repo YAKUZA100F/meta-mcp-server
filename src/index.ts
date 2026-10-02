@@ -369,9 +369,31 @@ app.get("/sse", async (req: Request, res: Response) => {
   await serverInstance.connect(transport);
 });
 
-// Messages Endpoint for SSE client requests
-app.post("/messages", async (req: Request, res: Response) => {
-  const sessionId = req.query.sessionId as string;
+// Messages Endpoint for SSE client requests (Supports /messages, /message, /sse, /sse/messages)
+const handleMessagePost = async (req: Request, res: Response) => {
+  let sessionId = (req.query.sessionId as string) || (req.headers["x-session-id"] as string);
+
+  if (!sessionId && req.body && typeof req.body === "object" && req.body.sessionId) {
+    sessionId = String(req.body.sessionId);
+  }
+
+  // Fallback 1: Match by license token if provided in query or Authorization header
+  if (!sessionId) {
+    const token = extractToken(req);
+    if (token) {
+      for (const [sId, sess] of activeSessions.entries()) {
+        if (sess.license.token === token) {
+          sessionId = sId;
+          break;
+        }
+      }
+    }
+  }
+
+  // Fallback 2: If only 1 active session exists, route to it
+  if (!sessionId && activeSessions.size === 1) {
+    sessionId = activeSessions.keys().next().value as string;
+  }
 
   if (!sessionId) {
     res.status(400).json({ error: "Missing sessionId parameter in query." });
@@ -392,8 +414,20 @@ app.post("/messages", async (req: Request, res: Response) => {
     return;
   }
 
-  await session.transport.handlePostMessage(req, res, req.body);
-});
+  try {
+    await session.transport.handlePostMessage(req, res, req.body);
+  } catch (error) {
+    console.error(`[SESSION ERROR] Failed to process message for session ${sessionId}:`, error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Failed to process message." });
+    }
+  }
+};
+
+app.post("/messages", handleMessagePost);
+app.post("/message", handleMessagePost);
+app.post("/sse", handleMessagePost);
+app.post("/sse/messages", handleMessagePost);
 
 // Meta Webhook Verification Endpoint
 app.get("/webhook/instagram", (req: Request, res: Response) => {

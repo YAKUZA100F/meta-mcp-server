@@ -436,11 +436,9 @@
       const serverUrl = window.location.origin;
       const configObj = {
         mcpServers: {
-          "meta-ads-ai": {
-            url: `${serverUrl}/sse`,
-            headers: {
-              Authorization: `Bearer ${client.token}`
-            }
+          "meta-ads": {
+            serverUrl: `${serverUrl}/sse?token=${client.token}`,
+            url: `${serverUrl}/sse?token=${client.token}`
           }
         }
       };

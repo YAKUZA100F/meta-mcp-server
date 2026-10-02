@@ -18,6 +18,7 @@ secrets.json
 
 # Persistent client data & licenses (NEVER COMMIT)
 data/
+packages/
 CLIENT_PACKAGE_TEMPLATE/mcp_config.json
 
 # Local test & debug scripts containing credentials
