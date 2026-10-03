@@ -43,9 +43,14 @@ export async function initDatabase(): Promise<void> {
   }
 
   try {
+    const isLocalOrInternal = DATABASE_URL.includes("localhost") || 
+                              DATABASE_URL.includes("127.0.0.1") || 
+                              DATABASE_URL.includes("oniflow") || 
+                              DATABASE_URL.includes("172.") || 
+                              DATABASE_URL.includes("sslmode=disable");
     pool = new Pool({
       connectionString: DATABASE_URL,
-      ssl: process.env.NODE_ENV === "production" && !DATABASE_URL.includes("localhost")
+      ssl: (process.env.NODE_ENV === "production" && !isLocalOrInternal)
         ? { rejectUnauthorized: false }
         : false,
       max: 20,

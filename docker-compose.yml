@@ -14,8 +14,14 @@ services:
       - META_ACCESS_TOKEN=${META_ACCESS_TOKEN:-}
       - THREADS_ACCESS_TOKEN=${THREADS_ACCESS_TOKEN:-}
       - DATABASE_URL=${DATABASE_URL:-}
+      - ADMIN_SECRET=${ADMIN_SECRET:-admin123}
     volumes:
       - ./data:/app/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - default
+      - oniflow-net
 
   # Production Reverse Proxy with Automatic SSL (for VPS deployment)
   caddy:
@@ -33,6 +39,12 @@ services:
       - caddy_config:/config
     depends_on:
       - meta-mcp
+
+networks:
+  default:
+  oniflow-net:
+    external: true
+    name: oniflow-dashboard_oniflow-net
 
 volumes:
   caddy_data:
