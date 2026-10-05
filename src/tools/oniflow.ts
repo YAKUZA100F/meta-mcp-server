@@ -10,6 +10,7 @@ import {
 
 function getBaseUrl(): string {
   if (process.env.PUBLIC_URL) return process.env.PUBLIC_URL.replace(/\/+$/, "");
+  if (process.env.DOMAIN) return `https://${process.env.DOMAIN.replace(/\/+$/, "")}`;
   if (process.env.NODE_ENV === "production") return "https://mcp.oniflow.space";
   const port = process.env.PORT || "2222";
   return `http://localhost:${port}`;

@@ -662,11 +662,13 @@ const PORT = parseInt(process.env.PORT ?? "2222", 10);
 async function startServer() {
   await initDatabase();
   app.listen(PORT, "0.0.0.0", () => {
+    const publicUrl = process.env.PUBLIC_URL || (process.env.DOMAIN ? `https://${process.env.DOMAIN}` : (process.env.NODE_ENV === "production" ? "https://mcp.oniflow.space" : `http://localhost:${PORT}`));
     console.log(`=======================================================`);
-    console.log(`  Meta MCP Cloud Server running on port ${PORT}`);
-    console.log(`  Admin Dashboard: http://localhost:${PORT}/admin`);
+    console.log(`  OniFlow MCP Server running on port ${PORT}`);
+    console.log(`  Public Domain:   ${publicUrl}`);
+    console.log(`  Admin Dashboard: ${publicUrl}/admin`);
     console.log(`  Admin Key:       ${ADMIN_SECRET}`);
-    console.log(`  SSE Endpoint:    http://localhost:${PORT}/sse`);
+    console.log(`  SSE Endpoint:    ${publicUrl}/sse`);
     console.log(`  Database:        ${process.env.DATABASE_URL ? "PostgreSQL" : "Local JSON Store"}`);
     console.log(`  Multi-Tenant:    Per-Client Dedicated Ad Accounts & Tokens`);
     console.log(`=======================================================`);

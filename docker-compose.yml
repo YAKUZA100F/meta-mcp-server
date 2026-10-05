@@ -11,6 +11,8 @@ services:
       - PORT=2222
       - NODE_ENV=production
       - DATA_DIR=/app/data
+      - DOMAIN=${DOMAIN:-mcp.oniflow.space}
+      - PUBLIC_URL=${PUBLIC_URL:-https://mcp.oniflow.space}
       - META_ACCESS_TOKEN=${META_ACCESS_TOKEN:-}
       - THREADS_ACCESS_TOKEN=${THREADS_ACCESS_TOKEN:-}
       - DATABASE_URL=${DATABASE_URL:-}
