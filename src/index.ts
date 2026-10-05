@@ -19,6 +19,15 @@ import { registerConversionTools } from "./tools/conversions.js";
 import { registerUtilityTools } from "./tools/utility.js";
 import { registerChartTools } from "./tools/charts.js";
 import { registerCommerceTools } from "./tools/commerce.js";
+import { registerOniflowTools } from "./tools/oniflow.js";
+import { renderLandingPage } from "./landing/renderer.js";
+import { renderCrmPage } from "./landing/crm.js";
+import {
+  getLandingPageBySlugAsync,
+  createLandingOrderAsync,
+  listOrdersByCrmTokenAsync,
+  updateOrderStatusByCrmTokenAsync,
+} from "./services/db.js";
 import { resolveApiKey } from "./op-fallback.js";
 import {
   initDatabase,
@@ -103,6 +112,7 @@ Antigravity should call this first to determine the primary ad account ID to ope
   registerUtilityTools(server, client);
   registerChartTools(server);
   registerCommerceTools(server, client);
+  registerOniflowTools(server, license);
 
   return server;
 }
@@ -120,6 +130,7 @@ const activeSessions = new Map<string, ActiveSession>();
 const app = express();
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // CORS setup
 app.use((req, res, next) => {
@@ -446,6 +457,204 @@ app.get("/webhook/instagram", (req: Request, res: Response) => {
 app.post("/webhook/instagram", (req: Request, res: Response) => {
   console.log("Received Webhook Event:", req.body);
   res.status(200).send("EVENT_RECEIVED");
+});
+
+// ─── ONIFLOW E-COMMERCE SUITE ROUTES ────────────────────────────────────────
+
+// Secret Mobile CRM Dashboard
+app.get("/crm/:crmToken", async (req: Request, res: Response) => {
+  const crmToken = String(req.params.crmToken || "");
+  try {
+    const data = await listOrdersByCrmTokenAsync(crmToken);
+    if (!data) {
+      res.status(404).send(`
+        <!DOCTYPE html>
+        <html lang="ar" dir="rtl">
+        <head>
+          <meta charset="UTF-8">
+          <title>404 - الرابط غير موجود</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+          <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700&display=swap" rel="stylesheet">
+        </head>
+        <body class="bg-slate-950 min-h-screen flex items-center justify-center p-4 font-['Cairo'] text-white">
+          <div class="max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl shadow-xl p-8 text-center">
+            <div class="text-5xl mb-4">🔒</div>
+            <h1 class="text-2xl font-black text-rose-500 mb-2">رابط الـ CRM غير صالح!</h1>
+            <p class="text-sm text-slate-400 mb-6">يرجى التأكد من الرابط السري الخاص بك المستلم من المساعد الذكي.</p>
+          </div>
+        </body>
+        </html>
+      `);
+      return;
+    }
+    const html = renderCrmPage(data.license, data.orders, crmToken);
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(html);
+  } catch (err: any) {
+    console.error("[CRM ERROR]", err);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+// Update Order Status via CRM
+app.post("/api/crm/:crmToken/orders/:id/status", async (req: Request, res: Response) => {
+  const crmToken = String(req.params.crmToken || "");
+  const id = String(req.params.id || "");
+  const { status } = req.body;
+  const validStatuses = ["new", "confirmed", "shipped", "delivered", "cancelled"];
+  if (!validStatuses.includes(status)) {
+    res.status(400).json({ error: "Invalid status value" });
+    return;
+  }
+  try {
+    const updated = await updateOrderStatusByCrmTokenAsync(crmToken, id, status);
+    if (!updated) {
+      res.status(404).json({ error: "Order not found or unauthorized" });
+      return;
+    }
+    res.json({ success: true, order: updated });
+  } catch (err: any) {
+    console.error("[CRM STATUS UPDATE ERROR]", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Export Orders to CSV (with UTF-8 BOM for Arabic Excel support)
+app.get("/api/crm/:crmToken/export", async (req: Request, res: Response) => {
+  const crmToken = String(req.params.crmToken || "");
+  try {
+    const data = await listOrdersByCrmTokenAsync(crmToken);
+    if (!data) {
+      res.status(404).send("Unauthorized or not found");
+      return;
+    }
+
+    const rows = [
+      ["رقم الطلب", "اسم الزبون", "الهاتف", "المدينة", "العنوان", "الكمية", "المجموع (MAD)", "الحالة", "ملاحظات", "تاريخ الطلب"]
+    ];
+
+    for (const ord of data.orders) {
+      rows.push([
+        ord.orderNumber,
+        ord.customerName,
+        ord.customerPhone,
+        ord.customerCity,
+        ord.customerAddress || "",
+        String(ord.quantity),
+        String(ord.totalPrice),
+        ord.status,
+        ord.notes || "",
+        ord.createdAt.slice(0, 19).replace("T", " ")
+      ]);
+    }
+
+    const csvContent = "\uFEFF" + rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+    const dateStr = new Date().toISOString().slice(0, 10);
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="orders-${encodeURIComponent(data.license.clientName)}-${dateStr}.csv"`);
+    res.send(csvContent);
+  } catch (err: any) {
+    console.error("[CRM EXPORT ERROR]", err);
+    res.status(500).send("Export failed");
+  }
+});
+
+// COD Order Submission API
+app.post("/api/orders", async (req: Request, res: Response) => {
+  const {
+    pageId,
+    storeSlug,
+    productSlug,
+    customerName,
+    customerPhone,
+    customerCity,
+    customerAddress,
+    quantity,
+    totalPrice,
+    notes,
+  } = req.body;
+
+  if (!customerName || !customerPhone || !customerCity) {
+    res.status(400).json({ error: "المرجو ملء جميع الحقول المطلوبة (الاسم، الهاتف، المدينة)." });
+    return;
+  }
+
+  const cleanPhone = String(customerPhone).replace(/\D/g, "");
+  if (cleanPhone.length < 9) {
+    res.status(400).json({ error: "رقم الهاتف غير صحيح، يرجى كتابة رقم هاتف مغربي صالح." });
+    return;
+  }
+
+  try {
+    const order = await createLandingOrderAsync({
+      pageId: pageId || "",
+      storeSlug: storeSlug || "",
+      productSlug: productSlug || "",
+      customerName: String(customerName).trim(),
+      customerPhone: String(customerPhone).trim(),
+      customerCity: String(customerCity).trim(),
+      customerAddress: customerAddress ? String(customerAddress).trim() : undefined,
+      quantity: Number(quantity) || 1,
+      totalPrice: Number(totalPrice) || 0,
+      notes: notes ? String(notes).trim() : undefined,
+      sourceIp: (req.ip || req.socket.remoteAddress || "").toString(),
+    });
+
+    console.log(`[NEW COD ORDER] #${order.orderNumber} - ${order.customerName} (${order.customerCity}) - ${order.totalPrice} MAD`);
+    res.json({
+      success: true,
+      orderNumber: order.orderNumber,
+      orderId: order.id,
+      message: "تم تسجيل طلبك بنجاح! سنتصل بك في أقرب وقت لتأكيد التوصيل.",
+    });
+  } catch (err: any) {
+    console.error("[CREATE ORDER ERROR]", err);
+    res.status(500).json({ error: "فشل تسجيل الطلب، يرجى المحاولة مرة أخرى." });
+  }
+});
+
+// Public COD Landing Page Route
+app.get("/:storeSlug/:productSlug", async (req: Request, res: Response, next: NextFunction) => {
+  const storeSlug = String(req.params.storeSlug || "");
+  const productSlug = String(req.params.productSlug || "");
+  const reserved = ["admin", "api", "sse", "messages", "message", "crm", "webhook", "health", "favicon.ico"];
+  if (reserved.includes(storeSlug.toLowerCase())) {
+    next();
+    return;
+  }
+
+  try {
+    const page = await getLandingPageBySlugAsync(storeSlug, productSlug);
+    if (!page) {
+      res.status(404).send(`
+        <!DOCTYPE html>
+        <html lang="ar" dir="rtl">
+        <head>
+          <meta charset="UTF-8">
+          <title>الصفحة غير موجودة | 404</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+          <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700&display=swap" rel="stylesheet">
+        </head>
+        <body class="bg-slate-50 min-h-screen flex items-center justify-center p-4 font-['Cairo']">
+          <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center border border-slate-100">
+            <div class="text-5xl mb-4">🔍</div>
+            <h1 class="text-2xl font-black text-slate-800 mb-2">عذرًا، الصفحة غير موجودة!</h1>
+            <p class="text-sm text-slate-500 mb-6">المنتج الذي تبحث عنه غير متوفر أو تم تعديل رابطه.</p>
+            <a href="/" class="inline-block bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl transition shadow">العودة للرئيسية</a>
+          </div>
+        </body>
+        </html>
+      `);
+      return;
+    }
+
+    const html = renderLandingPage(page, page.storeSlug);
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(html);
+  } catch (err: any) {
+    console.error("[LANDING PAGE ERROR]", err);
+    res.status(500).send("Internal server error");
+  }
 });
 
 const PORT = parseInt(process.env.PORT ?? "2222", 10);

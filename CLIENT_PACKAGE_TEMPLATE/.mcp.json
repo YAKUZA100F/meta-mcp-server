@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "oniflow": {
+      "url": "https://mcp.oniflow.space/sse?token={{CLIENT_TOKEN}}"
+    }
+  }
+}

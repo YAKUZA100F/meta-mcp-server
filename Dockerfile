@@ -25,14 +25,14 @@ COPY --from=builder /app/dist ./dist
 COPY src/admin/ ./src/admin/
 COPY src/admin/ ./dist/admin/
 
-# Create data directory for licenses
-RUN mkdir -p /app/data && chown -R node:node /app
+# Create data and uploads directories for persistence
+RUN mkdir -p /app/data /app/uploads && chown -R node:node /app
 
 USER node
 
 EXPOSE 2222
 
-VOLUME ["/app/data"]
+VOLUME ["/app/data", "/app/uploads"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:2222/health || exit 1

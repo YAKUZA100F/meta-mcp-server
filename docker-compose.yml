@@ -17,6 +17,7 @@ services:
       - ADMIN_SECRET=${ADMIN_SECRET:-admin123}
     volumes:
       - ./data:/app/data
+      - ./uploads:/app/uploads
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
